@@ -13,12 +13,15 @@ from tetrominoes import (T_long,
 from tetrominoes import list_of_tetrominoes
 from tetrominoes import rotate
 
+class BrokenMatrixException(Exception):
+    pass
+
 class Matris(object):
     def __init__(self, size=(10, 22), blocksize=30):
         self.size = {'width': size[0], 'height': size[1]}
         self.blocksize = blocksize
         self.surface = Surface((self.size['width']  * self.blocksize,
-                                self.size['height'] * self.blocksize))
+                                (self.size['height']-2) * self.blocksize))
         self.matrix = dict()
         for y in range(self.size['height']):
             for x in range(self.size['width']):
@@ -38,6 +41,7 @@ class Matris(object):
     def set_tetrominoes(self):
         self.current_tetromino = self.next_tetromino
         self.next_tetromino = random.choice(list_of_tetrominoes)
+        self.surface_of_next_tetromino = self.construct_surface_of_next_tetromino()
         self.tetromino_position = (0,4) if len(self.current_tetromino.shape) == 2 else (0, 3)
         self.tetromino_rotation = 0
         self.tetromino_block = self.block(self.current_tetromino.color)
@@ -51,8 +55,6 @@ class Matris(object):
         self.lock_tetromino()
 
     def update(self, timepassed, events):
-        self.previous = dict(self.matrix)
-
         pressed = lambda key: event.type == pygame.KEYDOWN and event.key == key
         unpressed = lambda key: event.type == pygame.KEYUP and event.key == key
         for event in events:
@@ -104,7 +106,9 @@ class Matris(object):
         
         for y in range(self.size['height']):
             for x in range(self.size['width']):
-                block_location = Rect(x*self.blocksize, y*self.blocksize, self.blocksize, self.blocksize)
+
+                #                                       I hide the 2 first rows by drawing them outside of the surface
+                block_location = Rect(x*self.blocksize, (y*self.blocksize - 2*self.blocksize), self.blocksize, self.blocksize)
                 if with_tetromino[(y,x)] is None:
                     self.surface.fill((30,30,30), block_location)
                 else:
@@ -118,8 +122,8 @@ class Matris(object):
 
         position = (posY-1, posX)
 
-        return self.blend(position=position, block=self.shadow_block, shadow=True)
-        
+        return self.blend(position=position, block=self.shadow_block, shadow=True) or self.matrix
+        # If the blend isn't successful just return the old matrix. The blend will fail later in self.update, it's game over.
 
     def request_rotation(self):
         rotation = (self.tetromino_rotation + 1) % 4
@@ -178,9 +182,8 @@ class Matris(object):
             for y in range(len(boxarr)):
                 boxarr[x][y] = tuple(map(lambda c: min(255, int(c*random.uniform(0.8, 1.2))), colors[color]) + end) 
 
-        del boxarr
+        del boxarr # deleting boxarr or else the box surface will be 'locked' or something like that and won't blit.
         border.blit(box, Rect(borderwidth, borderwidth, 0, 0))
-
 
 
         return border
@@ -219,19 +222,28 @@ class Matris(object):
             for y in range(posY, posY+len(shape)):
                 if (copy.get((y, x), False) is False and shape[y-posY][x-posX] # shape is outside the matrix
                     or # coordinate is occupied by something else which isn't a shadow
-                    copy.get((y,x), False) and shape[y-posY][x-posX] and copy[(y,x)][0] != 'shadow'): 
+                    copy.get((y,x)) and shape[y-posY][x-posX] and copy[(y,x)][0] != 'shadow'): 
                     if allow_failure:
                         return False
                     else:
                         print copy[(y,x)]
-                        raise RuntimeError("Tried to blend a broken matrix")
+                        raise BrokenMatrixException("Tried to blend a broken matrix. This should mean game over, if you see this it is certainly a bug. (or you are developing)")
                 elif shape[y-posY][x-posX] and not shadow:
                     copy[(y,x)] = ('block', self.tetromino_block if block is None else block)
                 elif shape[y-posY][x-posX] and shadow:
                     copy[(y,x)] = ('shadow', block)
 
-
         return copy
+
+    def construct_surface_of_next_tetromino(self):
+        shape = self.next_tetromino.shape
+        surf = Surface((len(shape)*self.blocksize, len(shape)*self.blocksize), pygame.SRCALPHA, 32)
+
+        for y in range(len(shape)):
+            for x in range(len(shape)):
+                if shape[y][x]:
+                    surf.blit(self.block(self.next_tetromino.color), (x*self.blocksize, y*self.blocksize))
+        return surf
 
 class Game(object):
     def main(self, screen):
@@ -253,10 +265,27 @@ class Game(object):
                     return
 
             matris.update(dt / 1000., events)
+
             background.blit(matris_border, (0,0))
             background.blit(matris.surface, (10,10))
+            background.blit(self.next_tetromino_surf(matris.surface_of_next_tetromino), (400, 30))
+
             screen.blit(background, (0, 0))
             pygame.display.flip()
+
+    def next_tetromino_surf(self, tetromino_surf):
+        area = Surface((30*5, 30*5))
+        area.fill((80,80,80))
+        area.fill((30,30,30), Rect(10, 10, 30*5-20, 30*5-20))
+
+        areasize = area.get_size()[0]
+        tetromino_surf_size = tetromino_surf.get_size()[0]
+        # ^^ I'm assuming width and height are the same
+
+        center = areasize/2 - tetromino_surf_size/2
+        area.blit(tetromino_surf, (center, center))
+
+        return area
 
 class Menu(object):
     running = True
