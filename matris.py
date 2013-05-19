@@ -31,12 +31,16 @@ class Matris(object):
         self.next_tetromino = random.choice(list_of_tetrominoes)
         self.set_tetrominoes()
         self.tetromino_rotation = 0
-        self.down_key_timer = 0
-        self.down_key_speed = 0.3
+        self.downwards_timer = 0
+        self.base_downwards_speed = 0.4 # Move down every 400 ms
 
         self.movement_keys = {'left': 0, 'right': 0}
         self.movement_keys_speed = 0.05
         self.movement_keys_timer = (-self.movement_keys_speed)*2
+
+        self.level = 1
+        self.score = 0
+        self.lines = 0
 
     def set_tetrominoes(self):
         self.current_tetromino = self.next_tetromino
@@ -84,13 +88,17 @@ class Matris(object):
             elif pressed(pygame.K_l):
                 self.lock_tetromino()
 
-        self.down_key_timer += timepassed
-        down_key_speed = self.down_key_speed*0.10 if pygame.key.get_pressed()[pygame.K_DOWN] else self.down_key_speed
-        if self.down_key_timer > down_key_speed:
+
+        self.downwards_speed = self.base_downwards_speed ** (1 + self.level/10.)
+        print self.downwards_speed
+
+        self.downwards_timer += timepassed
+        downwards_speed = self.downwards_speed*0.10 if pygame.key.get_pressed()[pygame.K_DOWN] else self.downwards_speed
+        if self.downwards_timer > downwards_speed:
             result = self.request_movement('down')
             if not result:
                 self.lock_tetromino()
-            self.down_key_timer %= down_key_speed
+            self.downwards_timer %= downwards_speed
 
 
         if any(self.movement_keys.values()):
@@ -102,8 +110,13 @@ class Matris(object):
         with_shadow = self.place_shadow()
         with_tetromino = self.blend(self.rotated(), allow_failure=False, matrix=with_shadow)
 
-        self.remove_lines()
+        lines_cleared = self.remove_lines()
+        self.lines += lines_cleared
+        self.score += 100 * lines_cleared * self.level
         
+        if self.lines >= self.level*10:
+            self.level += 1
+
         for y in range(self.size['height']):
             for x in range(self.size['width']):
 
@@ -114,6 +127,7 @@ class Matris(object):
                 else:
                     self.surface.fill((30,30,30), block_location)
                     self.surface.blit(with_tetromino[(y,x)][1], block_location)
+                    
 
     def place_shadow(self):
         posY, posX = self.tetromino_position
@@ -208,7 +222,7 @@ class Matris(object):
             for y in range(0, line+1)[::-1]:
                 for x in range(self.size['width']):
                     self.matrix[(y,x)] = self.matrix.get((y-1,x), None)
-
+        return len(lines)
 
     def blend(self, shape=None, position=None, matrix=None, block=None, allow_failure=True, shadow=False):
         if shape is None:
@@ -249,7 +263,7 @@ class Game(object):
     def main(self, screen):
         clock = pygame.time.Clock()
         background = Surface(screen.get_size())
-        background.fill((200,0,0))
+        background.fill((240,240,240))
         matris = Matris()
         matris_border = Surface((10*30+20, 20*30+20))
         matris_border.fill((80,80,80))
@@ -269,9 +283,44 @@ class Game(object):
             background.blit(matris_border, (0,0))
             background.blit(matris.surface, (10,10))
             background.blit(self.next_tetromino_surf(matris.surface_of_next_tetromino), (400, 30))
+            background.blit(self.info_surf(matris), (350, 200))
 
             screen.blit(background, (0, 0))
             pygame.display.flip()
+
+
+    def info_surf(self, matris):
+        score, level, lines = matris.score, matris.level, matris.lines
+
+        textcolor = (255, 255, 255)
+        font = pygame.font.Font(None, 30)
+        width = 280
+
+        def renderpair(text, val):
+            text = font.render(text, True, textcolor)
+            val = font.render(str(val), True, textcolor)
+
+            surf = Surface((width, text.get_rect().height + 20), pygame.SRCALPHA, 32)
+
+            surf.blit(text, text.get_rect(top=20, left=20))
+            surf.blit(val, val.get_rect(top=20, right=width-20))
+            return surf
+
+        scoresurf = renderpair("Score", score)
+        levelsurf = renderpair("Level", level)
+        linessurf = renderpair("Lines", lines)
+
+        height = 20 + levelsurf.get_rect().height + scoresurf.get_rect().height + linessurf.get_rect().height
+
+        area = Surface((width, height))
+        area.fill((80,80,80))
+        area.fill((30,30,30), Rect(10, 10, width-20, height-20))
+
+        area.blit(levelsurf, (0,0))
+        area.blit(scoresurf, (0, levelsurf.get_rect().height))
+        area.blit(linessurf, (0, levelsurf.get_rect().height + scoresurf.get_rect().height))
+
+        return area
 
     def next_tetromino_surf(self, tetromino_surf):
         area = Surface((30*5, 30*5))
@@ -297,7 +346,7 @@ class Menu(object):
         )
         menu.x = 50
         menu.y = 50
-        menu.enableEffect('raise-col-padding-on-focus', enlarge_time=0.1)
+        menu.enableEffect('raise-col-padding-on-focus', enlarge_time=0.07)
 
         while self.running:
             events = pygame.event.get()
@@ -313,5 +362,5 @@ class Menu(object):
 
 if __name__ == '__main__':
     pygame.init()
-    screen = pygame.display.set_mode((640, 880))
+    screen = pygame.display.set_mode((640, 30*20+20))
     Menu().main(screen)
