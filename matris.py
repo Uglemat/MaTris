@@ -13,6 +13,7 @@ from tetrominoes import (T_long,
 from tetrominoes import list_of_tetrominoes
 from tetrominoes import rotate
 
+
 class BrokenMatrixException(Exception):
     pass
 
@@ -41,6 +42,13 @@ class Matris(object):
         self.level = 1
         self.score = 0
         self.lines = 0
+
+        self.combo = 0 # Combo will increase when you clear lines with several tetrominos in a row
+        
+        self.levelup_sound = pygame.mixer.Sound("resources/levelup.wav")
+        self.linescleared_sound = pygame.mixer.Sound("resources/linecleared.wav")
+        self.gameover_sound = pygame.mixer.Sound("resources/gameover.wav")
+
 
     def set_tetrominoes(self):
         self.current_tetromino = self.next_tetromino
@@ -90,7 +98,6 @@ class Matris(object):
 
 
         self.downwards_speed = self.base_downwards_speed ** (1 + self.level/10.)
-        print self.downwards_speed
 
         self.downwards_timer += timepassed
         downwards_speed = self.downwards_speed*0.10 if pygame.key.get_pressed()[pygame.K_DOWN] else self.downwards_speed
@@ -108,14 +115,12 @@ class Matris(object):
             self.movement_keys_timer %= self.movement_keys_speed
 
         with_shadow = self.place_shadow()
-        with_tetromino = self.blend(self.rotated(), allow_failure=False, matrix=with_shadow)
 
-        lines_cleared = self.remove_lines()
-        self.lines += lines_cleared
-        self.score += 100 * lines_cleared * self.level
-        
-        if self.lines >= self.level*10:
-            self.level += 1
+        try:
+            with_tetromino = self.blend(self.rotated(), allow_failure=False, matrix=with_shadow)
+        except BrokenMatrixException:
+            self.gameover_sound.play()
+            return 'gameover'
 
         for y in range(self.size['height']):
             for x in range(self.size['width']):
@@ -203,7 +208,24 @@ class Matris(object):
         return border
 
     def lock_tetromino(self):
+
+        tetromino_centerX = self.tetromino_position[1]*self.blocksize + len(self.current_tetromino.shape)*self.blocksize/2
         self.matrix = self.blend()
+
+        lines_cleared, bottom_line_cleared = self.remove_lines()
+        self.lines += lines_cleared
+
+        if lines_cleared:
+            self.linescleared_sound.play()
+            bonus_multiplier = (lines_cleared + self.combo)
+            self.score += 100 * bonus_multiplier
+
+        if self.lines >= self.level*10:
+            self.levelup_sound.play()
+            self.level += 1
+
+        self.combo = self.combo + 1 if lines_cleared else 0
+
         self.set_tetrominoes()
 
     def remove_lines(self):
@@ -222,7 +244,8 @@ class Matris(object):
             for y in range(0, line+1)[::-1]:
                 for x in range(self.size['width']):
                     self.matrix[(y,x)] = self.matrix.get((y-1,x), None)
-        return len(lines)
+
+        return len(lines), sorted(lines)[-1] if lines else None
 
     def blend(self, shape=None, position=None, matrix=None, block=None, allow_failure=True, shadow=False):
         if shape is None:
@@ -264,9 +287,11 @@ class Game(object):
         clock = pygame.time.Clock()
         background = Surface(screen.get_size())
         background.fill((240,240,240))
-        matris = Matris()
+        self.matris = Matris()
         matris_border = Surface((10*30+20, 20*30+20))
         matris_border.fill((80,80,80))
+
+        self.bonus_stuff = []
 
         while 1:
             dt = clock.tick(45)
@@ -278,19 +303,23 @@ class Game(object):
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     return
 
-            matris.update(dt / 1000., events)
+            result = self.matris.update(dt / 1000., events)
+            if result == 'gameover':
+                return
 
             background.blit(matris_border, (0,0))
-            background.blit(matris.surface, (10,10))
-            background.blit(self.next_tetromino_surf(matris.surface_of_next_tetromino), (400, 30))
-            background.blit(self.info_surf(matris), (350, 200))
+            background.blit(self.matris.surface, (10,10))
+            background.blit(self.next_tetromino_surf(self.matris.surface_of_next_tetromino), (400, 30))
+            background.blit(self.info_surf(), (350, 200))
+
 
             screen.blit(background, (0, 0))
+
             pygame.display.flip()
 
 
-    def info_surf(self, matris):
-        score, level, lines = matris.score, matris.level, matris.lines
+    def info_surf(self):
+        score, level, lines = self.matris.score, self.matris.level, self.matris.lines
 
         textcolor = (255, 255, 255)
         font = pygame.font.Font(None, 30)
