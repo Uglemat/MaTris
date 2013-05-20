@@ -217,8 +217,7 @@ class Matris(object):
 
         if lines_cleared:
             self.linescleared_sound.play()
-            bonus_multiplier = (lines_cleared + self.combo)
-            self.score += 100 * bonus_multiplier
+            self.score += 100 * (lines_cleared + self.combo)
 
         if self.lines >= self.level*10:
             self.levelup_sound.play()
@@ -263,7 +262,6 @@ class Matris(object):
                     if allow_failure:
                         return False
                     else:
-                        print copy[(y,x)]
                         raise BrokenMatrixException("Tried to blend a broken matrix. This should mean game over, if you see this it is certainly a bug. (or you are developing)")
                 elif shape[y-posY][x-posX] and not shadow:
                     copy[(y,x)] = ('block', self.tetromino_block if block is None else block)
@@ -309,8 +307,12 @@ class Game(object):
 
             background.blit(matris_border, (0,0))
             background.blit(self.matris.surface, (10,10))
-            background.blit(self.next_tetromino_surf(self.matris.surface_of_next_tetromino), (400, 30))
-            background.blit(self.info_surf(), (350, 200))
+
+            nextts = self.next_tetromino_surf(self.matris.surface_of_next_tetromino)
+            background.blit(nextts, nextts.get_rect(top=20, centerx=(30*10)+(30*5)+30))
+
+            infos = self.info_surf()
+            background.blit(infos, infos.get_rect(top=200, centerx=(30*10)+(30*5)+30))
 
 
             screen.blit(background, (0, 0))
@@ -319,7 +321,6 @@ class Game(object):
 
 
     def info_surf(self):
-        score, level, lines = self.matris.score, self.matris.level, self.matris.lines
 
         textcolor = (255, 255, 255)
         font = pygame.font.Font(None, 30)
@@ -335,11 +336,15 @@ class Game(object):
             surf.blit(val, val.get_rect(top=20, right=width-20))
             return surf
 
-        scoresurf = renderpair("Score", score)
-        levelsurf = renderpair("Level", level)
-        linessurf = renderpair("Lines", lines)
+        scoresurf = renderpair("Score", self.matris.score)
+        levelsurf = renderpair("Level", self.matris.level)
+        linessurf = renderpair("Lines", self.matris.lines)
+        combosurf = renderpair("Combo", "x{}".format(self.matris.combo+1))
 
-        height = 20 + levelsurf.get_rect().height + scoresurf.get_rect().height + linessurf.get_rect().height
+        height = 20 + (levelsurf.get_rect().height + 
+                       scoresurf.get_rect().height +
+                       linessurf.get_rect().height + 
+                       combosurf.get_rect().height )
 
         area = Surface((width, height))
         area.fill((80,80,80))
@@ -348,6 +353,7 @@ class Game(object):
         area.blit(levelsurf, (0,0))
         area.blit(scoresurf, (0, levelsurf.get_rect().height))
         area.blit(linessurf, (0, levelsurf.get_rect().height + scoresurf.get_rect().height))
+        area.blit(combosurf, (0, levelsurf.get_rect().height + scoresurf.get_rect().height + linessurf.get_rect().height))
 
         return area
 
