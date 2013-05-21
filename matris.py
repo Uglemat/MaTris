@@ -83,10 +83,12 @@ class Matris(object):
 
     
     def hard_drop(self):
+        amount = 0
         while self.request_movement('down'):
-            pass
+            amount += 1
 
         self.lock_tetromino()
+        self.score += 10*amount
 
     def update(self, timepassed):
         pressed = lambda key: event.type == pygame.KEYDOWN and event.key == key
@@ -94,9 +96,10 @@ class Matris(object):
         for event in pygame.event.get():
             
             if event.type == pygame.QUIT:
+                self.prepare_and_execute_gameover(playsound=False)
                 exit()
             if pressed(pygame.K_ESCAPE) or pressed(pygame.K_q):
-                self.prepare_and_execute_gameover()
+                self.prepare_and_execute_gameover(playsound=False)
 
 
             if pressed(pygame.K_SPACE):
@@ -168,9 +171,9 @@ class Matris(object):
                     self.surface.fill(BGCOLOR, block_location)
                     self.surface.blit(with_tetromino[(y,x)][1], block_location)
                     
-
-    def prepare_and_execute_gameover(self):
-        self.gameover_sound.play()
+    def prepare_and_execute_gameover(self, playsound=True):
+        if playsound:
+            self.gameover_sound.play()
         write_score(self.score)
         self.gameover = True
 
@@ -256,11 +259,13 @@ class Matris(object):
         self.lines += lines_cleared
 
         if lines_cleared:
-            self.linescleared_sound.play()
-            self.score += 100 * (lines_cleared + self.combo)
+            if lines_cleared >= 4:
+                self.linescleared_sound.play()
+            self.score += 100 * lines_cleared * self.combo
 
             if not self.played_highscorebeaten_sound and self.score > self.highscore:
-                self.highscorebeaten_sound.play()
+                if self.highscore != 0:
+                    self.highscorebeaten_sound.play()
                 self.played_highscorebeaten_sound = True
 
         if self.lines >= self.level*10:
