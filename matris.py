@@ -3,26 +3,41 @@ from pygame import Rect, Surface
 import random
 import kezmenu
 
-from tetrominoes import (T_long, 
-                         T_square, 
-                         T_hat,
-                         T_right_snake,
-                         T_left_snake,
-                         T_left_gun,
-                         T_right_gun)
 from tetrominoes import list_of_tetrominoes
 from tetrominoes import rotate
 
+from scores import load_score, write_score
 
 class BrokenMatrixException(Exception):
     pass
 
+
+
+
+BGCOLOR = (15, 15, 20)#(40,40,40)
+BORDERCOLOR = (140, 140, 140)
+
+BLOCKSIZE = 30
+BORDERWIDTH = 10
+
+MATRIS_OFFSET = 20
+
+WIDTH = 700
+HEIGHT = 20*BLOCKSIZE + BORDERWIDTH*2 + MATRIS_OFFSET*2
+
+MATRIX_WIDTH = 10
+MATRIX_HEIGHT = 22
+VISIBLE_MATRIX_HEIGHT = MATRIX_HEIGHT - 2
+
+
 class Matris(object):
-    def __init__(self, size=(10, 22), blocksize=30):
+    def __init__(self, size=(MATRIX_WIDTH, MATRIX_HEIGHT), blocksize=BLOCKSIZE):
         self.size = {'width': size[0], 'height': size[1]}
         self.blocksize = blocksize
         self.surface = Surface((self.size['width']  * self.blocksize,
                                 (self.size['height']-2) * self.blocksize))
+
+
         self.matrix = dict()
         for y in range(self.size['height']):
             for x in range(self.size['width']):
@@ -45,9 +60,16 @@ class Matris(object):
 
         self.combo = 0 # Combo will increase when you clear lines with several tetrominos in a row
         
+        self.paused = False
+        self.gameover = False
+
+        self.highscore = load_score()
+        self.played_highscorebeaten_sound = False
+
         self.levelup_sound = pygame.mixer.Sound("resources/levelup.wav")
         self.linescleared_sound = pygame.mixer.Sound("resources/linecleared.wav")
         self.gameover_sound = pygame.mixer.Sound("resources/gameover.wav")
+        self.highscorebeaten_sound = pygame.mixer.Sound("resources/highscorebeaten.wav")
 
 
     def set_tetrominoes(self):
@@ -66,10 +88,17 @@ class Matris(object):
 
         self.lock_tetromino()
 
-    def update(self, timepassed, events):
+    def update(self, timepassed):
         pressed = lambda key: event.type == pygame.KEYDOWN and event.key == key
         unpressed = lambda key: event.type == pygame.KEYUP and event.key == key
-        for event in events:
+        for event in pygame.event.get():
+            
+            if event.type == pygame.QUIT:
+                exit()
+            if pressed(pygame.K_ESCAPE) or pressed(pygame.K_q):
+                self.prepare_and_execute_gameover()
+
+
             if pressed(pygame.K_SPACE):
                 self.hard_drop()
             elif pressed(pygame.K_UP):
@@ -96,6 +125,12 @@ class Matris(object):
             elif pressed(pygame.K_l):
                 self.lock_tetromino()
 
+            elif pressed(pygame.K_p):
+                self.surface.fill((0,0,0))
+                self.paused = not self.paused
+
+        if self.paused:
+            return
 
         self.downwards_speed = self.base_downwards_speed ** (1 + self.level/10.)
 
@@ -119,8 +154,8 @@ class Matris(object):
         try:
             with_tetromino = self.blend(self.rotated(), allow_failure=False, matrix=with_shadow)
         except BrokenMatrixException:
-            self.gameover_sound.play()
-            return 'gameover'
+            self.prepare_and_execute_gameover()
+            return
 
         for y in range(self.size['height']):
             for x in range(self.size['width']):
@@ -128,11 +163,16 @@ class Matris(object):
                 #                                       I hide the 2 first rows by drawing them outside of the surface
                 block_location = Rect(x*self.blocksize, (y*self.blocksize - 2*self.blocksize), self.blocksize, self.blocksize)
                 if with_tetromino[(y,x)] is None:
-                    self.surface.fill((30,30,30), block_location)
+                    self.surface.fill(BGCOLOR, block_location)
                 else:
-                    self.surface.fill((30,30,30), block_location)
+                    self.surface.fill(BGCOLOR, block_location)
                     self.surface.blit(with_tetromino[(y,x)][1], block_location)
                     
+
+    def prepare_and_execute_gameover(self):
+        self.gameover_sound.play()
+        write_score(self.score)
+        self.gameover = True
 
     def place_shadow(self):
         posY, posX = self.tetromino_position
@@ -219,6 +259,10 @@ class Matris(object):
             self.linescleared_sound.play()
             self.score += 100 * (lines_cleared + self.combo)
 
+            if not self.played_highscorebeaten_sound and self.score > self.highscore:
+                self.highscorebeaten_sound.play()
+                self.played_highscorebeaten_sound = True
+
         if self.lines >= self.level*10:
             self.levelup_sound.play()
             self.level += 1
@@ -284,56 +328,51 @@ class Game(object):
     def main(self, screen):
         clock = pygame.time.Clock()
         background = Surface(screen.get_size())
-        background.fill((240,240,240))
-        self.matris = Matris()
-        matris_border = Surface((10*30+20, 20*30+20))
-        matris_border.fill((80,80,80))
 
-        self.bonus_stuff = []
+        background.blit(construct_nightmare(background.get_size()), (0,0))
+
+        self.matris = Matris()
+        matris_border = Surface((MATRIX_WIDTH*BLOCKSIZE+BORDERWIDTH*2, VISIBLE_MATRIX_HEIGHT*BLOCKSIZE+BORDERWIDTH*2))
+        matris_border.fill(BORDERCOLOR)
 
         while 1:
             dt = clock.tick(45)
 
-            events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    exit()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
-
-            result = self.matris.update(dt / 1000., events)
-            if result == 'gameover':
+            self.matris.update((dt / 1000.) if not self.matris.paused else 0)
+            if self.matris.gameover:
                 return
 
-            background.blit(matris_border, (0,0))
-            background.blit(self.matris.surface, (10,10))
+            tricky_centerx = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
+
+            background.blit(matris_border, (MATRIS_OFFSET,MATRIS_OFFSET))
+            background.blit(self.matris.surface, (MATRIS_OFFSET+BORDERWIDTH, MATRIS_OFFSET+BORDERWIDTH))
 
             nextts = self.next_tetromino_surf(self.matris.surface_of_next_tetromino)
-            background.blit(nextts, nextts.get_rect(top=20, centerx=(30*10)+(30*5)+30))
+            background.blit(nextts, nextts.get_rect(top=MATRIS_OFFSET, centerx=tricky_centerx))
 
             infos = self.info_surf()
-            background.blit(infos, infos.get_rect(top=200, centerx=(30*10)+(30*5)+30))
+            background.blit(infos, infos.get_rect(bottom=HEIGHT-MATRIS_OFFSET, centerx=tricky_centerx))
 
 
             screen.blit(background, (0, 0))
 
             pygame.display.flip()
-
+    
 
     def info_surf(self):
 
         textcolor = (255, 255, 255)
         font = pygame.font.Font(None, 30)
-        width = 280
+        width = (WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2)) - MATRIS_OFFSET*2
 
         def renderpair(text, val):
             text = font.render(text, True, textcolor)
             val = font.render(str(val), True, textcolor)
 
-            surf = Surface((width, text.get_rect().height + 20), pygame.SRCALPHA, 32)
+            surf = Surface((width, text.get_rect().height + BORDERWIDTH*2), pygame.SRCALPHA, 32)
 
-            surf.blit(text, text.get_rect(top=20, left=20))
-            surf.blit(val, val.get_rect(top=20, right=width-20))
+            surf.blit(text, text.get_rect(top=BORDERWIDTH+10, left=BORDERWIDTH+10))
+            surf.blit(val, val.get_rect(top=BORDERWIDTH+10, right=width-(BORDERWIDTH+10)))
             return surf
 
         scoresurf = renderpair("Score", self.matris.score)
@@ -347,8 +386,8 @@ class Game(object):
                        combosurf.get_rect().height )
 
         area = Surface((width, height))
-        area.fill((80,80,80))
-        area.fill((30,30,30), Rect(10, 10, width-20, height-20))
+        area.fill(BORDERCOLOR)
+        area.fill(BGCOLOR, Rect(BORDERWIDTH, BORDERWIDTH, width-BORDERWIDTH*2, height-BORDERWIDTH*2))
 
         area.blit(levelsurf, (0,0))
         area.blit(scoresurf, (0, levelsurf.get_rect().height))
@@ -358,9 +397,9 @@ class Game(object):
         return area
 
     def next_tetromino_surf(self, tetromino_surf):
-        area = Surface((30*5, 30*5))
-        area.fill((80,80,80))
-        area.fill((30,30,30), Rect(10, 10, 30*5-20, 30*5-20))
+        area = Surface((BLOCKSIZE*5, BLOCKSIZE*5))
+        area.fill(BORDERCOLOR)
+        area.fill(BGCOLOR, Rect(BORDERWIDTH, BORDERWIDTH, BLOCKSIZE*5-BORDERWIDTH*2, BLOCKSIZE*5-BORDERWIDTH*2))
 
         areasize = area.get_size()[0]
         tetromino_surf_size = tetromino_surf.get_size()[0]
@@ -379,9 +418,15 @@ class Menu(object):
             ['Play!', lambda: Game().main(screen)],
             ['Quit', lambda: setattr(self, 'running', False)],
         )
-        menu.x = 50
-        menu.y = 50
-        menu.enableEffect('raise-col-padding-on-focus', enlarge_time=0.07)
+        menu.position = (50, 50)
+        menu.enableEffect('enlarge-font-on-focus', font=None, size=60, enlarge_factor=1.2, enlarge_time=0.3)
+        menu.color = (255,255,255)
+        menu.focus_color = (40, 200, 40)
+
+        nightmare = construct_nightmare(screen.get_size())
+        highscoresurf = self.construct_highscoresurf()
+
+        timepassed = clock.tick(30) / 1000.
 
         while self.running:
             events = pygame.event.get()
@@ -390,12 +435,45 @@ class Menu(object):
                 if event.type == pygame.QUIT:
                     exit()
 
-            menu.update(events, clock.tick(30)/1000.)
-            screen.fill((0,200,0))
+            menu.update(events, timepassed)
+
+            timepassed = clock.tick(30) / 1000.
+
+            if timepassed > 1: # A game has most likely been played 
+                highscoresurf = self.construct_highscoresurf()
+
+            screen.blit(nightmare, (0,0))
+            screen.blit(highscoresurf, highscoresurf.get_rect(right=WIDTH-50, bottom=HEIGHT-50))
             menu.draw(screen)
             pygame.display.flip()
 
+    def construct_highscoresurf(self):
+        font = pygame.font.Font(None, 50)
+        highscore = load_score()
+        text = "Highscore: {}".format(highscore)
+        return font.render(text, True, (255,255,255))
+
+def construct_nightmare(size):
+    surf = Surface(size)
+
+    boxsize = 8
+    bordersize = 1
+    vals = '1235' # only the lower values, for darker colors and greater fear
+    arr = pygame.PixelArray(surf)
+    for x in xrange(0, len(arr), boxsize):
+        for y in xrange(0, len(arr[x]), boxsize):
+
+            color = int(''.join([random.choice(vals) + random.choice(vals) for _ in range(3)]), 16)
+
+            for LX in xrange(x, x+(boxsize - bordersize)):
+                for LY in xrange(y, y+(boxsize - bordersize)):
+                    if LX < len(arr) and LY < len(arr[x]):
+                        arr[LX][LY] = color
+    del arr
+    return surf
+
+
 if __name__ == '__main__':
     pygame.init()
-    screen = pygame.display.set_mode((640, 30*20+20))
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     Menu().main(screen)
