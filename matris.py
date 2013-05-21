@@ -262,7 +262,7 @@ class Matris(object):
         if lines_cleared:
             if lines_cleared >= 4:
                 self.linescleared_sound.play()
-            self.score += 100 * lines_cleared * self.combo
+            self.score += 100 * (lines_cleared**2) * self.combo
 
             if not self.played_highscorebeaten_sound and self.score > self.highscore:
                 if self.highscore != 0:
