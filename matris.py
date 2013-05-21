@@ -58,7 +58,7 @@ class Matris(object):
         self.score = 0
         self.lines = 0
 
-        self.combo = 0 # Combo will increase when you clear lines with several tetrominos in a row
+        self.combo = 1 # Combo will increase when you clear lines with several tetrominos in a row
         
         self.paused = False
         self.gameover = False
@@ -140,8 +140,7 @@ class Matris(object):
         self.downwards_timer += timepassed
         downwards_speed = self.downwards_speed*0.10 if pygame.key.get_pressed()[pygame.K_DOWN] else self.downwards_speed
         if self.downwards_timer > downwards_speed:
-            result = self.request_movement('down')
-            if not result:
+            if not self.request_movement('down'):
                 self.lock_tetromino()
             self.downwards_timer %= downwards_speed
 
@@ -168,7 +167,9 @@ class Matris(object):
                 if with_tetromino[(y,x)] is None:
                     self.surface.fill(BGCOLOR, block_location)
                 else:
-                    self.surface.fill(BGCOLOR, block_location)
+                    if with_tetromino[(y,x)][0] == 'shadow':
+                        self.surface.fill(BGCOLOR, block_location)
+                    
                     self.surface.blit(with_tetromino[(y,x)][1], block_location)
                     
     def prepare_and_execute_gameover(self, playsound=True):
@@ -272,7 +273,7 @@ class Matris(object):
             self.levelup_sound.play()
             self.level += 1
 
-        self.combo = self.combo + 1 if lines_cleared else 0
+        self.combo = self.combo + 1 if lines_cleared else 1
 
         self.set_tetrominoes()
 
@@ -383,7 +384,7 @@ class Game(object):
         scoresurf = renderpair("Score", self.matris.score)
         levelsurf = renderpair("Level", self.matris.level)
         linessurf = renderpair("Lines", self.matris.lines)
-        combosurf = renderpair("Combo", "x{}".format(self.matris.combo+1))
+        combosurf = renderpair("Combo", "x{}".format(self.matris.combo))
 
         height = 20 + (levelsurf.get_rect().height + 
                        scoresurf.get_rect().height +
