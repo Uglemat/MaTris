@@ -93,18 +93,26 @@ class Matris(object):
     def update(self, timepassed):
         pressed = lambda key: event.type == pygame.KEYDOWN and event.key == key
         unpressed = lambda key: event.type == pygame.KEYUP and event.key == key
-        for event in pygame.event.get():
-            
-            if event.type == pygame.QUIT:
+
+        events = pygame.event.get()
+        
+        for event in events:
+            if pressed(pygame.K_p):
+                self.surface.fill((0,0,0))
+                self.paused = not self.paused
+            elif event.type == pygame.QUIT:
                 self.prepare_and_execute_gameover(playsound=False)
                 exit()
-            if pressed(pygame.K_ESCAPE) or pressed(pygame.K_q):
+            elif pressed(pygame.K_ESCAPE):
                 self.prepare_and_execute_gameover(playsound=False)
 
+        if self.paused:
+            return
 
+        for event in events:
             if pressed(pygame.K_SPACE):
                 self.hard_drop()
-            elif pressed(pygame.K_UP):
+            elif pressed(pygame.K_UP) or pressed(pygame.K_w):
                 self.request_rotation()
 
             elif pressed(pygame.K_LEFT) or pressed(pygame.K_a):
@@ -121,24 +129,14 @@ class Matris(object):
                 self.movement_keys['right'] = 0
                 self.movement_keys_timer = (-self.movement_keys_speed)*2
 
-            elif pressed(pygame.K_w):
-                self.request_movement('up')
-            elif pressed(pygame.K_s):
-                self.request_movement('down')
-            elif pressed(pygame.K_l):
-                self.lock_tetromino()
 
-            elif pressed(pygame.K_p):
-                self.surface.fill((0,0,0))
-                self.paused = not self.paused
 
-        if self.paused:
-            return
 
         self.downwards_speed = self.base_downwards_speed ** (1 + self.level/10.)
 
         self.downwards_timer += timepassed
-        downwards_speed = self.downwards_speed*0.10 if pygame.key.get_pressed()[pygame.K_DOWN] else self.downwards_speed
+        downwards_speed = self.downwards_speed*0.10 if any([pygame.key.get_pressed()[pygame.K_DOWN],
+                                                            pygame.key.get_pressed()[pygame.K_s]])   else self.downwards_speed
         if self.downwards_timer > downwards_speed:
             if not self.request_movement('down'):
                 self.lock_tetromino()
@@ -253,10 +251,9 @@ class Matris(object):
 
     def lock_tetromino(self):
 
-        tetromino_centerX = self.tetromino_position[1]*self.blocksize + len(self.current_tetromino.shape)*self.blocksize/2
         self.matrix = self.blend()
 
-        lines_cleared, bottom_line_cleared = self.remove_lines()
+        lines_cleared = self.remove_lines()
         self.lines += lines_cleared
 
         if lines_cleared:
@@ -294,7 +291,7 @@ class Matris(object):
                 for x in range(self.size['width']):
                     self.matrix[(y,x)] = self.matrix.get((y-1,x), None)
 
-        return len(lines), sorted(lines)[-1] if lines else None
+        return len(lines)
 
     def blend(self, shape=None, position=None, matrix=None, block=None, allow_failure=True, shadow=False):
         if shape is None:
