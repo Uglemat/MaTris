@@ -186,11 +186,32 @@ class Matris(object):
         return self.blend(position=position, block=self.shadow_block, shadow=True) or self.matrix
         # If the blend isn't successful just return the old matrix. The blend will fail later in self.update, it's game over.
 
+    def fits_in_matrix(self, shape, position):
+        posY, posX = position
+        for x in range(posX, posX+len(shape)):
+            for y in range(posY, posY+len(shape)):
+                if self.matrix.get((y, x), False) is False and shape[y-posY][x-posX]: # outside matrix
+                    return False
+
+        return position
+                    
+
     def request_rotation(self):
         rotation = (self.tetromino_rotation + 1) % 4
         shape = self.rotated(rotation)
-        if self.blend(shape):
+
+        y, x = self.tetromino_position
+
+        position = (self.fits_in_matrix(shape, (y, x)) or
+                    self.fits_in_matrix(shape, (y, x+1)) or
+                    self.fits_in_matrix(shape, (y, x-1)) or
+                    self.fits_in_matrix(shape, (y, x+2)) or
+                    self.fits_in_matrix(shape, (y, x-2)))
+        # ^ Thats how wall-kick is implemented
+
+        if position and self.blend(shape, position):
             self.tetromino_rotation = rotation
+            self.tetromino_position = position
             return self.tetromino_rotation
         else:
             return False
