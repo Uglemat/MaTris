@@ -1,5 +1,6 @@
+import os
 
-scorefile = ".highscores"
+scorefile = os.path.join(os.path.dirname(__file__), ".highscores")
 
 def load_score():
     """ Returns the highest score, or 0 if no one has scored yet """

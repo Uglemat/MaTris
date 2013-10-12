@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 import pygame
 from pygame import Rect, Surface
 import random
+import os
 import kezmenu
 
 from tetrominoes import list_of_tetrominoes
@@ -12,9 +14,10 @@ class BrokenMatrixException(Exception):
     pass
 
 
+def get_sound(filename):
+    return pygame.mixer.Sound(os.path.join(os.path.dirname(__file__), "resources", filename))
 
-
-BGCOLOR = (15, 15, 20)#(40,40,40)
+BGCOLOR = (15, 15, 20)
 BORDERCOLOR = (140, 140, 140)
 
 BLOCKSIZE = 30
@@ -66,10 +69,10 @@ class Matris(object):
         self.highscore = load_score()
         self.played_highscorebeaten_sound = False
 
-        self.levelup_sound = pygame.mixer.Sound("resources/levelup.wav")
-        self.linescleared_sound = pygame.mixer.Sound("resources/linecleared.wav")
-        self.gameover_sound = pygame.mixer.Sound("resources/gameover.wav")
-        self.highscorebeaten_sound = pygame.mixer.Sound("resources/highscorebeaten.wav")
+        self.levelup_sound  = get_sound("levelup.wav")
+        self.gameover_sound = get_sound("gameover.wav")
+        self.linescleared_sound = get_sound("linecleared.wav")
+        self.highscorebeaten_sound = get_sound("highscorebeaten.wav")
 
 
     def set_tetrominoes(self):
