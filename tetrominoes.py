@@ -69,7 +69,8 @@ def rotate_left(shape, times=1):
 
 def shape_str(shape):
     """ Return a string of a shape in human readable form """
-    return '\n'.join(''.join(line) for line in shape)
+    return '\n'.join(''.join(map({'X': 'X', None: 'O'}.get, line))
+                     for line in shape)
 
 def shape(shape):
     """ Print a shape in human readable form """
