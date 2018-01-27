@@ -43,13 +43,13 @@ class KezMenuEffectAble(object):
         and enlarge_factor (a value that repr the size multiplier to be reached).
         """
         self._effects[name] = kwargs
-        if not kwargs.has_key('font'):
+        if 'font' not in kwargs:
             raise TypeError("enlarge_font_on_focus: font parameter is required")
-        if not kwargs.has_key('size'):
+        if 'size' not in kwargs:
             raise TypeError("enlarge_font_on_focus: size parameter is required")
-        if not kwargs.has_key('enlarge_time'):
+        if 'enlarge_time' not in kwargs:
             kwargs['enlarge_time'] = .5
-        if not kwargs.has_key('enlarge_factor'):
+        if 'enlarge_factor' not in kwargs:
             kwargs['enlarge_factor'] = 2.
         kwargs['raise_font_ps'] = kwargs['enlarge_factor']/kwargs['enlarge_time'] # pixel-per-second
         for o in self.options:
@@ -94,9 +94,9 @@ class KezMenuEffectAble(object):
         and padding (a value that repr the number of pixel to be added above and below the focused line).
         """
         self._effects[name] = kwargs
-        if not kwargs.has_key('enlarge_time'):
+        if 'enlarge_time' not in kwargs:
             kwargs['enlarge_time'] = .5
-        if not kwargs.has_key('padding'):
+        if 'padding' not in kwargs:
             kwargs['padding'] = 10
         kwargs['padding_pps'] = kwargs['padding']/kwargs['enlarge_time'] # pixel-per-second
         # Now, every menu voices need additional infos

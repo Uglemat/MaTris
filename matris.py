@@ -257,7 +257,7 @@ class Matris(object):
             end = [] # Adding this to the end will not change the array, thus no alpha value
 
         border = Surface((self.blocksize, self.blocksize), pygame.SRCALPHA, 32)
-        border.fill(map(lambda c: c*0.5, colors[color]) + end)
+        border.fill(list(map(lambda c: c*0.5, colors[color])) + end)
 
         borderwidth = 2
 
@@ -265,7 +265,7 @@ class Matris(object):
         boxarr = pygame.PixelArray(box)
         for x in range(len(boxarr)):
             for y in range(len(boxarr)):
-                boxarr[x][y] = tuple(map(lambda c: min(255, int(c*random.uniform(0.8, 1.2))), colors[color]) + end) 
+                boxarr[x][y] = tuple(list(map(lambda c: min(255, int(c*random.uniform(0.8, 1.2))), colors[color])) + end) 
 
         del boxarr # deleting boxarr or else the box surface will be 'locked' or something like that and won't blit.
         border.blit(box, Rect(borderwidth, borderwidth, 0, 0))
@@ -487,13 +487,13 @@ def construct_nightmare(size):
     bordersize = 1
     vals = '1235' # only the lower values, for darker colors and greater fear
     arr = pygame.PixelArray(surf)
-    for x in xrange(0, len(arr), boxsize):
-        for y in xrange(0, len(arr[x]), boxsize):
+    for x in range(0, len(arr), boxsize):
+        for y in range(0, len(arr[x]), boxsize):
 
             color = int(''.join([random.choice(vals) + random.choice(vals) for _ in range(3)]), 16)
 
-            for LX in xrange(x, x+(boxsize - bordersize)):
-                for LY in xrange(y, y+(boxsize - bordersize)):
+            for LX in range(x, x+(boxsize - bordersize)):
+                for LY in range(y, y+(boxsize - bordersize)):
                     if LX < len(arr) and LY < len(arr[x]):
                         arr[LX][LY] = color
     del arr

@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import namedtuple
 
 X, O = 'X', None
@@ -74,7 +75,7 @@ def shape_str(shape):
 
 def shape(shape):
     """ Print a shape in human readable form """
-    print shape_str(shape)
+    print(shape_str(shape))
 
 
 
@@ -99,7 +100,7 @@ def test():
     assert rotate(T_hat.shape, 2) == ((O,O,O),
                                       (X,X,X),
                                       (O,X,O))
-    print "All tests passed in {}, things seems to be working alright".format(__file__)
+    print("All tests passed in {}, things seems to be working alright".format(__file__))
 
 if __name__ == '__main__':
     test()
