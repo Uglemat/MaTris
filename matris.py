@@ -139,17 +139,25 @@ class Matris(object):
 
         self.downwards_timer += timepassed
         downwards_speed = self.downwards_speed*0.10 if any([pygame.key.get_pressed()[pygame.K_DOWN],
-                                                            pygame.key.get_pressed()[pygame.K_s]])   else self.downwards_speed
+                                                            pygame.key.get_pressed()[pygame.K_s]]) else self.downwards_speed
         if self.downwards_timer > downwards_speed:
             if not self.request_movement('down'):
-                self.lock_tetromino()
+                if self.lock_tetromino() == False:
+                    self.prepare_and_execute_gameover()
+                    return
+                    # Under normal circumstances, gameover should happen below, when the BrokenMatrixException occurs.
+                    # Basically, when writing this code 5 years ago, I must have assumed that self.lock_tetromino could
+                    # not be called more than once in self.update. Actually, a hard drop and a "natural" drop can happen
+                    # at the same time. This previously resulted in an extremely rare bug. It took me hours staring at
+                    # this code to understand what was going on. Be safe!
+
             self.downwards_timer %= downwards_speed
 
 
         if any(self.movement_keys.values()):
             self.movement_keys_timer += timepassed
         if self.movement_keys_timer > self.movement_keys_speed:
-            result = self.request_movement('right' if self.movement_keys['right'] else 'left')
+            self.request_movement('right' if self.movement_keys['right'] else 'left')
             self.movement_keys_timer %= self.movement_keys_speed
 
         with_shadow = self.place_shadow()
@@ -274,8 +282,9 @@ class Matris(object):
         return border
 
     def lock_tetromino(self):
-
         self.matrix = self.blend()
+        if not self.matrix:
+            return False # Extremely rarely happens
 
         lines_cleared = self.remove_lines()
         self.lines += lines_cleared
@@ -297,6 +306,7 @@ class Matris(object):
         self.combo = self.combo + 1 if lines_cleared else 1
 
         self.set_tetrominoes()
+        return True
 
     def remove_lines(self):
         lines = []
