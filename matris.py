@@ -45,7 +45,12 @@ class Matris(object):
         for y in range(self.size['height']):
             for x in range(self.size['width']):
                 self.matrix[(y,x)] = None
-
+        """
+        `self.matrix` is the current state of the tetris board, that is, it records which squares are
+        currently occupied. It does not include the falling tetromino. The information relating to the
+        falling tetromino is managed by `self.set_tetrominoes` instead. When the falling tetromino "dies",
+        it will be placed in `self.matrix`.
+        """
 
         self.next_tetromino = random.choice(list_of_tetrominoes)
         self.set_tetrominoes()
@@ -279,6 +284,10 @@ class Matris(object):
         return border
 
     def lock_tetromino(self):
+        """
+        This method is called whenever the falling tetromino "dies". `self.matrix` is updated,
+        the lines are counted and cleared, and a new tetromino is chosen.
+        """
         self.matrix = self.blend()
         if not self.matrix:
             return False # Extremely rarely happens
@@ -325,6 +334,14 @@ class Matris(object):
         return len(lines)
 
     def blend(self, shape=None, position=None, matrix=None, block=None, shadow=False):
+        """
+        Does `shape` at `position` fit in `matrix`? If so, return a new copy of `matrix` where all
+        the squares of `shape` have been placed in `matrix`. Otherwise, return False.
+        
+        This method is often used simply as a test, for example to see if an action by the player is valid.
+        It is also used at the end of `self.update` to place the falling tetromino and its shadow in order
+        to paint them on the screen.
+        """
         if shape is None:
             shape = self.rotated()
         if position is None:
