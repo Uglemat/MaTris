@@ -338,7 +338,7 @@ class Matris(object):
                     or # coordinate is occupied by something else which isn't a shadow
                     copy.get((y,x)) and shape[y-posY][x-posX] and copy[(y,x)][0] != 'shadow'):
 
-                    return False # Blend failed; `shape` at `location` breaks the matrix
+                    return False # Blend failed; `shape` at `position` breaks the matrix
                 
                 elif shape[y-posY][x-posX] and not shadow:
                     copy[(y,x)] = ('block', self.tetromino_block if block is None else block)
