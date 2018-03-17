@@ -196,7 +196,7 @@ class Matris(object):
 
         position = (posY-1, posX)
 
-        return self.blend(position=position, block=self.shadow_block, shadow=True) or self.matrix
+        return self.blend(position=position, shadow=True) or self.matrix
         # If the blend isn't successful just return the old matrix. The blend will fail later in self.update, it's game over.
 
     def fits_in_matrix(self, shape, position):
@@ -220,7 +220,7 @@ class Matris(object):
                     self.fits_in_matrix(shape, (y, x-1)) or
                     self.fits_in_matrix(shape, (y, x+2)) or
                     self.fits_in_matrix(shape, (y, x-2)))
-        # ^ Thats how wall-kick is implemented
+        # ^ That's how wall-kick is implemented
 
         if position and self.blend(shape, position):
             self.tetromino_rotation = rotation
@@ -333,7 +333,7 @@ class Matris(object):
 
         return len(lines)
 
-    def blend(self, shape=None, position=None, matrix=None, block=None, shadow=False):
+    def blend(self, shape=None, position=None, matrix=None, shadow=False):
         """
         Does `shape` at `position` fit in `matrix`? If so, return a new copy of `matrix` where all
         the squares of `shape` have been placed in `matrix`. Otherwise, return False.
@@ -356,11 +356,9 @@ class Matris(object):
                     copy.get((y,x)) and shape[y-posY][x-posX] and copy[(y,x)][0] != 'shadow'):
 
                     return False # Blend failed; `shape` at `position` breaks the matrix
-                
-                elif shape[y-posY][x-posX] and not shadow:
-                    copy[(y,x)] = ('block', self.tetromino_block if block is None else block)
-                elif shape[y-posY][x-posX] and shadow:
-                    copy[(y,x)] = ('shadow', block)
+
+                elif shape[y-posY][x-posX]:
+                    copy[(y,x)] = ('shadow', self.shadow_block) if shadow else ('block', self.tetromino_block)
 
         return copy
 
