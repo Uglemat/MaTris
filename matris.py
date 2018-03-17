@@ -10,9 +10,6 @@ from tetrominoes import rotate
 
 from scores import load_score, write_score
 
-class BrokenMatrixException(Exception):
-    pass
-
 
 def get_sound(filename):
     return pygame.mixer.Sound(os.path.join(os.path.dirname(__file__), "resources", filename))
@@ -25,11 +22,14 @@ BORDERWIDTH = 10
 
 MATRIS_OFFSET = 20
 
-WIDTH = 700
-HEIGHT = 20*BLOCKSIZE + BORDERWIDTH*2 + MATRIS_OFFSET*2
-
 MATRIX_WIDTH = 10
 MATRIX_HEIGHT = 22
+
+LEFT_MARGIN = 340
+
+WIDTH = MATRIX_WIDTH*BLOCKSIZE + BORDERWIDTH*2 + MATRIS_OFFSET*2 + LEFT_MARGIN
+HEIGHT = (MATRIX_HEIGHT-2)*BLOCKSIZE + BORDERWIDTH*2 + MATRIS_OFFSET*2
+
 VISIBLE_MATRIX_HEIGHT = MATRIX_HEIGHT - 2
 
 
@@ -143,9 +143,8 @@ class Matris(object):
         if self.downwards_timer > downwards_speed:
             if not self.request_movement('down'):
                 if self.lock_tetromino() == False:
-                    self.prepare_and_execute_gameover()
-                    return
-                    # Under normal circumstances, gameover should happen below, when the BrokenMatrixException occurs.
+                    return self.prepare_and_execute_gameover()
+                    # Under normal circumstances, gameover should happen below (`if not with_tetromino`).
                     # Basically, when writing this code 5 years ago, I must have assumed that self.lock_tetromino could
                     # not be called more than once in self.update. Actually, a hard drop and a "natural" drop can happen
                     # at the same time. This previously resulted in an extremely rare bug. It took me hours staring at
@@ -160,13 +159,11 @@ class Matris(object):
             self.request_movement('right' if self.movement_keys['right'] else 'left')
             self.movement_keys_timer %= self.movement_keys_speed
 
-        with_shadow = self.place_shadow()
-
-        try:
-            with_tetromino = self.blend(self.rotated(), allow_failure=False, matrix=with_shadow)
-        except BrokenMatrixException:
-            self.prepare_and_execute_gameover()
-            return
+        with_tetromino = self.blend(self.rotated(), matrix=self.place_shadow())
+        if not with_tetromino:
+            return self.prepare_and_execute_gameover()
+            # What has just happened which caused the gameover, you ask? The answer is that a tetromino has
+            # just been placed (self.lock_tetromino), and the new tetromino immediately breaks the matrix.
 
         for y in range(self.size['height']):
             for x in range(self.size['width']):
@@ -250,7 +247,7 @@ class Matris(object):
         return rotate(self.current_tetromino.shape, rotation)
 
     def block(self, color, shadow=False):
-        colors = {'blue':   (27, 34, 224),
+        colors = {'blue':   (47, 64, 224),
                   'yellow': (225, 242, 41),
                   'pink':   (242, 41, 195),
                   'green':  (22, 181, 64),
@@ -327,7 +324,7 @@ class Matris(object):
 
         return len(lines)
 
-    def blend(self, shape=None, position=None, matrix=None, block=None, allow_failure=True, shadow=False):
+    def blend(self, shape=None, position=None, matrix=None, block=None, shadow=False):
         if shape is None:
             shape = self.rotated()
         if position is None:
@@ -339,11 +336,10 @@ class Matris(object):
             for y in range(posY, posY+len(shape)):
                 if (copy.get((y, x), False) is False and shape[y-posY][x-posX] # shape is outside the matrix
                     or # coordinate is occupied by something else which isn't a shadow
-                    copy.get((y,x)) and shape[y-posY][x-posX] and copy[(y,x)][0] != 'shadow'): 
-                    if allow_failure:
-                        return False
-                    else:
-                        raise BrokenMatrixException("Tried to blend a broken matrix. This should mean game over, if you see this it is certainly a bug. (or you are developing)")
+                    copy.get((y,x)) and shape[y-posY][x-posX] and copy[(y,x)][0] != 'shadow'):
+
+                    return False # Blend failed; `shape` at `location` breaks the matrix
+                
                 elif shape[y-posY][x-posX] and not shadow:
                     copy[(y,x)] = ('block', self.tetromino_block if block is None else block)
                 elif shape[y-posY][x-posX] and shadow:
