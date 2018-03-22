@@ -111,10 +111,9 @@ class Matris(object):
                 self.surface.fill((0,0,0))
                 self.paused = not self.paused
             elif event.type == pygame.QUIT:
-                self.gameover(playsound=False)
-                exit()
+                self.gameover(full_exit=True)
             elif pressed(pygame.K_ESCAPE):
-                self.gameover(playsound=False)
+                self.gameover()
 
         if self.paused:
             return
@@ -175,17 +174,19 @@ class Matris(object):
                     
                     self.surface.blit(with_tetromino[(y,x)][1], block_location)
                     
-    def gameover(self, playsound=True):
+    def gameover(self, full_exit=False):
         """
         Gameover occurs when a new tetromino does not fit after the old one has died, either
         after a "natural" drop or a hard drop by the player. That is why `self.lock_tetromino`
         is responsible for checking if it's game over.
         """
 
-        if playsound:
-            self.gameover_sound.play()
         write_score(self.score)
-        raise GameOver("Sucker!")
+        
+        if full_exit:
+            exit()
+        else:
+            raise GameOver("Sucker!")
 
     def place_shadow(self):
         posY, posX = self.tetromino_position
@@ -310,6 +311,7 @@ class Matris(object):
         self.set_tetrominoes()
 
         if not self.blend():
+            self.gameover_sound.play()
             self.gameover()
 
     def remove_lines(self):
