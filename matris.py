@@ -195,8 +195,7 @@ class Matris(object):
 
         position = (posY-1, posX)
 
-        return self.blend(position=position, shadow=True) or self.matrix
-        # If the blend isn't successful just return the old matrix. The blend will fail later in self.update, it's game over.
+        return self.blend(position=position, shadow=True)
 
     def fits_in_matrix(self, shape, position):
         posY, posX = position
