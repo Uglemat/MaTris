@@ -10,6 +10,8 @@ from tetrominoes import rotate
 
 from scores import load_score, write_score
 
+class GameOver(Exception):
+    """Exception used for its control flow properties"""
 
 def get_sound(filename):
     return pygame.mixer.Sound(os.path.join(os.path.dirname(__file__), "resources", filename))
@@ -69,7 +71,6 @@ class Matris(object):
         self.combo = 1 # Combo will increase when you clear lines with several tetrominos in a row
         
         self.paused = False
-        self.gameover = False
 
         self.highscore = load_score()
         self.played_highscorebeaten_sound = False
@@ -94,9 +95,10 @@ class Matris(object):
         amount = 0
         while self.request_movement('down'):
             amount += 1
+        self.score += 10*amount
 
         self.lock_tetromino()
-        self.score += 10*amount
+
 
     def update(self, timepassed):
         pressed = lambda key: event.type == pygame.KEYDOWN and event.key == key
@@ -109,10 +111,10 @@ class Matris(object):
                 self.surface.fill((0,0,0))
                 self.paused = not self.paused
             elif event.type == pygame.QUIT:
-                self.prepare_and_execute_gameover(playsound=False)
+                self.gameover(playsound=False)
                 exit()
             elif pressed(pygame.K_ESCAPE):
-                self.prepare_and_execute_gameover(playsound=False)
+                self.gameover(playsound=False)
 
         if self.paused:
             return
@@ -147,13 +149,7 @@ class Matris(object):
                                                             pygame.key.get_pressed()[pygame.K_s]]) else self.downwards_speed
         if self.downwards_timer > downwards_speed:
             if not self.request_movement('down'):
-                if self.lock_tetromino() == False:
-                    return self.prepare_and_execute_gameover()
-                    # Under normal circumstances, gameover should happen below (`if not with_tetromino`).
-                    # Basically, when writing this code 5 years ago, I must have assumed that self.lock_tetromino could
-                    # not be called more than once in self.update. Actually, a hard drop and a "natural" drop can happen
-                    # at the same time. This previously resulted in an extremely rare bug. It took me hours staring at
-                    # this code to understand what was going on. Be safe!
+                self.lock_tetromino()
 
             self.downwards_timer %= downwards_speed
 
@@ -164,11 +160,7 @@ class Matris(object):
             self.request_movement('right' if self.movement_keys['right'] else 'left')
             self.movement_keys_timer %= self.movement_keys_speed
 
-        with_tetromino = self.blend(self.rotated(), matrix=self.place_shadow())
-        if not with_tetromino:
-            return self.prepare_and_execute_gameover()
-            # What has just happened which caused the gameover, you ask? The answer is that a tetromino has
-            # just been placed (self.lock_tetromino), and the new tetromino immediately breaks the matrix.
+        with_tetromino = self.blend(matrix=self.place_shadow())
 
         for y in range(self.size['height']):
             for x in range(self.size['width']):
@@ -183,11 +175,17 @@ class Matris(object):
                     
                     self.surface.blit(with_tetromino[(y,x)][1], block_location)
                     
-    def prepare_and_execute_gameover(self, playsound=True):
+    def gameover(self, playsound=True):
+        """
+        Gameover occurs when a new tetromino does not fit after the old one has died, either
+        after a "natural" drop or a hard drop by the player. That is why `self.lock_tetromino`
+        is responsible for checking if it's game over.
+        """
+
         if playsound:
             self.gameover_sound.play()
         write_score(self.score)
-        self.gameover = True
+        raise GameOver("Sucker!")
 
     def place_shadow(self):
         posY, posX = self.tetromino_position
@@ -289,8 +287,6 @@ class Matris(object):
         the lines are counted and cleared, and a new tetromino is chosen.
         """
         self.matrix = self.blend()
-        if not self.matrix:
-            return False # Extremely rarely happens
 
         lines_cleared = self.remove_lines()
         self.lines += lines_cleared
@@ -312,7 +308,9 @@ class Matris(object):
         self.combo = self.combo + 1 if lines_cleared else 1
 
         self.set_tetrominoes()
-        return True
+
+        if not self.blend():
+            self.gameover()
 
     def remove_lines(self):
         lines = []
@@ -383,11 +381,10 @@ class Game(object):
         matris_border = Surface((MATRIX_WIDTH*BLOCKSIZE+BORDERWIDTH*2, VISIBLE_MATRIX_HEIGHT*BLOCKSIZE+BORDERWIDTH*2))
         matris_border.fill(BORDERCOLOR)
 
-        while 1:
-            dt = clock.tick(45)
-
-            self.matris.update((dt / 1000.) if not self.matris.paused else 0)
-            if self.matris.gameover:
+        while True:
+            try:
+                self.matris.update((clock.tick(45) / 1000.) if not self.matris.paused else 0)
+            except GameOver:
                 return
 
             tricky_centerx = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
