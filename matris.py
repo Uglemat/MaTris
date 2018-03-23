@@ -101,6 +101,8 @@ class Matris(object):
 
 
     def update(self, timepassed):
+        self.needs_redraw = False
+        
         pressed = lambda key: event.type == pygame.KEYDOWN and event.key == key
         unpressed = lambda key: event.type == pygame.KEYUP and event.key == key
 
@@ -158,7 +160,10 @@ class Matris(object):
         if self.movement_keys_timer > self.movement_keys_speed:
             self.request_movement('right' if self.movement_keys['right'] else 'left')
             self.movement_keys_timer %= self.movement_keys_speed
+        
+        return self.needs_redraw
 
+    def draw_surface(self):
         with_tetromino = self.blend(matrix=self.place_shadow())
 
         for y in range(self.size['height']):
@@ -223,11 +228,14 @@ class Matris(object):
         if position and self.blend(shape, position):
             self.tetromino_rotation = rotation
             self.tetromino_position = position
+            
+            self.needs_redraw = True
             return self.tetromino_rotation
         else:
             return False
             
     def request_movement(self, direction):
+        self.needs_redraw = True
         posY, posX = self.tetromino_position
         if direction == 'left' and self.blend(position=(posY, posX-1)):
             self.tetromino_position = (posY, posX-1)
@@ -242,6 +250,7 @@ class Matris(object):
             self.tetromino_position = (posY+1, posX)
             return self.tetromino_position
         else:
+            self.needs_redraw = False
             return False
 
     def rotated(self, rotation=None):
@@ -312,6 +321,8 @@ class Matris(object):
         if not self.blend():
             self.gameover_sound.play()
             self.gameover()
+            
+        self.needs_redraw = True
 
     def remove_lines(self):
         lines = []
@@ -338,8 +349,7 @@ class Matris(object):
         the squares of `shape` have been placed in `matrix`. Otherwise, return False.
         
         This method is often used simply as a test, for example to see if an action by the player is valid.
-        It is also used at the end of `self.update` to place the falling tetromino and its shadow in order
-        to paint them on the screen.
+        It is also used in `self.draw_surface` to paint the falling tetromino and its shadow on the screen.
         """
         if shape is None:
             shape = self.rotated()
@@ -374,36 +384,39 @@ class Matris(object):
 class Game(object):
     def main(self, screen):
         clock = pygame.time.Clock()
-        background = Surface(screen.get_size())
-
-        background.blit(construct_nightmare(background.get_size()), (0,0))
 
         self.matris = Matris()
+        
+        screen.blit(construct_nightmare(screen.get_size()), (0,0))
+        
         matris_border = Surface((MATRIX_WIDTH*BLOCKSIZE+BORDERWIDTH*2, VISIBLE_MATRIX_HEIGHT*BLOCKSIZE+BORDERWIDTH*2))
         matris_border.fill(BORDERCOLOR)
+        screen.blit(matris_border, (MATRIS_OFFSET,MATRIS_OFFSET))
+        
+        self.redraw()
 
         while True:
             try:
-                self.matris.update((clock.tick(45) / 1000.) if not self.matris.paused else 0)
+                if self.matris.update((clock.tick(50) / 1000.) if not self.matris.paused else 0):
+                    self.redraw()
             except GameOver:
                 return
+      
 
-            tricky_centerx = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
+    def redraw(self):
+        tricky_centerx = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
+        
+        nextts = self.next_tetromino_surf(self.matris.surface_of_next_tetromino)
+        screen.blit(nextts, nextts.get_rect(top=MATRIS_OFFSET, centerx=tricky_centerx))
 
-            background.blit(matris_border, (MATRIS_OFFSET,MATRIS_OFFSET))
-            background.blit(self.matris.surface, (MATRIS_OFFSET+BORDERWIDTH, MATRIS_OFFSET+BORDERWIDTH))
+        infos = self.info_surf()
+        screen.blit(infos, infos.get_rect(bottom=HEIGHT-MATRIS_OFFSET, centerx=tricky_centerx))
 
-            nextts = self.next_tetromino_surf(self.matris.surface_of_next_tetromino)
-            background.blit(nextts, nextts.get_rect(top=MATRIS_OFFSET, centerx=tricky_centerx))
+        self.matris.draw_surface()
+        screen.blit(self.matris.surface, (MATRIS_OFFSET+BORDERWIDTH, MATRIS_OFFSET+BORDERWIDTH))
 
-            infos = self.info_surf()
-            background.blit(infos, infos.get_rect(bottom=HEIGHT-MATRIS_OFFSET, centerx=tricky_centerx))
+        pygame.display.flip()
 
-
-            screen.blit(background, (0, 0))
-
-            pygame.display.flip()
-    
 
     def info_surf(self):
 
@@ -521,6 +534,7 @@ def construct_nightmare(size):
 
 if __name__ == '__main__':
     pygame.init()
+
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("MaTris")
     Menu().main(screen)
