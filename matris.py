@@ -37,8 +37,8 @@ VISIBLE_MATRIX_HEIGHT = MATRIX_HEIGHT - 2
 
 class Matris(object):
     def __init__(self):
-        self.surface = Surface((MATRIX_WIDTH * BLOCKSIZE,
-                                (MATRIX_HEIGHT-2) * BLOCKSIZE))
+        self.surface = screen.subsurface(Rect((MATRIS_OFFSET+BORDERWIDTH, MATRIS_OFFSET+BORDERWIDTH),
+                                              (MATRIX_WIDTH * BLOCKSIZE, (MATRIX_HEIGHT-2) * BLOCKSIZE)))
 
         self.matrix = dict()
         for y in range(MATRIX_HEIGHT):
@@ -416,7 +416,6 @@ class Game(object):
 
             self.matris.draw_surface()
 
-        screen.blit(self.matris.surface, (MATRIS_OFFSET+BORDERWIDTH, MATRIS_OFFSET+BORDERWIDTH))
         pygame.display.flip()
 
 
