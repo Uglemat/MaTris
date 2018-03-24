@@ -36,16 +36,13 @@ VISIBLE_MATRIX_HEIGHT = MATRIX_HEIGHT - 2
 
 
 class Matris(object):
-    def __init__(self, size=(MATRIX_WIDTH, MATRIX_HEIGHT), blocksize=BLOCKSIZE):
-        self.size = {'width': size[0], 'height': size[1]}
-        self.blocksize = blocksize
-        self.surface = Surface((self.size['width']  * self.blocksize,
-                                (self.size['height']-2) * self.blocksize))
-
+    def __init__(self):
+        self.surface = Surface((MATRIX_WIDTH * BLOCKSIZE,
+                                (MATRIX_HEIGHT-2) * BLOCKSIZE))
 
         self.matrix = dict()
-        for y in range(self.size['height']):
-            for x in range(self.size['width']):
+        for y in range(MATRIX_HEIGHT):
+            for x in range(MATRIX_WIDTH):
                 self.matrix[(y,x)] = None
         """
         `self.matrix` is the current state of the tetris board, that is, it records which squares are
@@ -111,6 +108,7 @@ class Matris(object):
         for event in events:
             if pressed(pygame.K_p):
                 self.surface.fill((0,0,0))
+                self.needs_redraw = True
                 self.paused = not self.paused
             elif event.type == pygame.QUIT:
                 self.gameover(full_exit=True)
@@ -118,7 +116,7 @@ class Matris(object):
                 self.gameover()
 
         if self.paused:
-            return
+            return self.needs_redraw
 
         for event in events:
             if pressed(pygame.K_SPACE):
@@ -166,11 +164,11 @@ class Matris(object):
     def draw_surface(self):
         with_tetromino = self.blend(matrix=self.place_shadow())
 
-        for y in range(self.size['height']):
-            for x in range(self.size['width']):
+        for y in range(MATRIX_HEIGHT):
+            for x in range(MATRIX_WIDTH):
 
                 #                                       I hide the 2 first rows by drawing them outside of the surface
-                block_location = Rect(x*self.blocksize, (y*self.blocksize - 2*self.blocksize), self.blocksize, self.blocksize)
+                block_location = Rect(x*BLOCKSIZE, (y*BLOCKSIZE - 2*BLOCKSIZE), BLOCKSIZE, BLOCKSIZE)
                 if with_tetromino[(y,x)] is None:
                     self.surface.fill(BGCOLOR, block_location)
                 else:
@@ -273,12 +271,12 @@ class Matris(object):
         else:
             end = [] # Adding this to the end will not change the array, thus no alpha value
 
-        border = Surface((self.blocksize, self.blocksize), pygame.SRCALPHA, 32)
+        border = Surface((BLOCKSIZE, BLOCKSIZE), pygame.SRCALPHA, 32)
         border.fill(list(map(lambda c: c*0.5, colors[color])) + end)
 
         borderwidth = 2
 
-        box = Surface((self.blocksize-borderwidth*2, self.blocksize-borderwidth*2), pygame.SRCALPHA, 32)
+        box = Surface((BLOCKSIZE-borderwidth*2, BLOCKSIZE-borderwidth*2), pygame.SRCALPHA, 32)
         boxarr = pygame.PixelArray(box)
         for x in range(len(boxarr)):
             for y in range(len(boxarr)):
@@ -326,19 +324,19 @@ class Matris(object):
 
     def remove_lines(self):
         lines = []
-        for y in range(self.size['height']):
+        for y in range(MATRIX_HEIGHT):
             line = (y, [])
-            for x in range(self.size['width']):
+            for x in range(MATRIX_WIDTH):
                 if self.matrix[(y,x)]:
                     line[1].append(x)
-            if len(line[1]) == self.size['width']:
+            if len(line[1]) == MATRIX_WIDTH:
                 lines.append(y)
 
         for line in sorted(lines):
-            for x in range(self.size['width']):
+            for x in range(MATRIX_WIDTH):
                 self.matrix[(line,x)] = None
             for y in range(0, line+1)[::-1]:
-                for x in range(self.size['width']):
+                for x in range(MATRIX_WIDTH):
                     self.matrix[(y,x)] = self.matrix.get((y-1,x), None)
 
         return len(lines)
@@ -373,12 +371,12 @@ class Matris(object):
 
     def construct_surface_of_next_tetromino(self):
         shape = self.next_tetromino.shape
-        surf = Surface((len(shape)*self.blocksize, len(shape)*self.blocksize), pygame.SRCALPHA, 32)
+        surf = Surface((len(shape)*BLOCKSIZE, len(shape)*BLOCKSIZE), pygame.SRCALPHA, 32)
 
         for y in range(len(shape)):
             for x in range(len(shape)):
                 if shape[y][x]:
-                    surf.blit(self.block(self.next_tetromino.color), (x*self.blocksize, y*self.blocksize))
+                    surf.blit(self.block(self.next_tetromino.color), (x*BLOCKSIZE, y*BLOCKSIZE))
         return surf
 
 class Game(object):
@@ -397,24 +395,26 @@ class Game(object):
 
         while True:
             try:
-                if self.matris.update((clock.tick(50) / 1000.) if not self.matris.paused else 0):
+                timepassed = clock.tick(50)
+                if self.matris.update((timepassed / 1000.) if not self.matris.paused else 0):
                     self.redraw()
             except GameOver:
                 return
       
 
     def redraw(self):
-        tricky_centerx = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
+        if not self.matris.paused:
+            tricky_centerx = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
         
-        nextts = self.next_tetromino_surf(self.matris.surface_of_next_tetromino)
-        screen.blit(nextts, nextts.get_rect(top=MATRIS_OFFSET, centerx=tricky_centerx))
+            nextts = self.next_tetromino_surf(self.matris.surface_of_next_tetromino)
+            screen.blit(nextts, nextts.get_rect(top=MATRIS_OFFSET, centerx=tricky_centerx))
 
-        infos = self.info_surf()
-        screen.blit(infos, infos.get_rect(bottom=HEIGHT-MATRIS_OFFSET, centerx=tricky_centerx))
+            infos = self.info_surf()
+            screen.blit(infos, infos.get_rect(bottom=HEIGHT-MATRIS_OFFSET, centerx=tricky_centerx))
 
-        self.matris.draw_surface()
+            self.matris.draw_surface()
+
         screen.blit(self.matris.surface, (MATRIS_OFFSET+BORDERWIDTH, MATRIS_OFFSET+BORDERWIDTH))
-
         pygame.display.flip()
 
 
