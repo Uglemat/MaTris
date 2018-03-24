@@ -32,6 +32,8 @@ LEFT_MARGIN = 340
 WIDTH = MATRIX_WIDTH*BLOCKSIZE + BORDERWIDTH*2 + MATRIS_OFFSET*2 + LEFT_MARGIN
 HEIGHT = (MATRIX_HEIGHT-2)*BLOCKSIZE + BORDERWIDTH*2 + MATRIS_OFFSET*2
 
+TRICKY_CENTERX = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
+
 VISIBLE_MATRIX_HEIGHT = MATRIX_HEIGHT - 2
 
 
@@ -406,21 +408,15 @@ class Game(object):
 
     def redraw(self):
         if not self.matris.paused:
-            tricky_centerx = WIDTH-(WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2))/2
-        
-            nextts = self.next_tetromino_surf(self.matris.surface_of_next_tetromino)
-            screen.blit(nextts, nextts.get_rect(top=MATRIS_OFFSET, centerx=tricky_centerx))
-
-            infos = self.info_surf()
-            screen.blit(infos, infos.get_rect(bottom=HEIGHT-MATRIS_OFFSET, centerx=tricky_centerx))
+            self.blit_next_tetromino(self.matris.surface_of_next_tetromino)
+            self.blit_info()
 
             self.matris.draw_surface()
 
         pygame.display.flip()
 
 
-    def info_surf(self):
-
+    def blit_info(self):
         textcolor = (255, 255, 255)
         font = pygame.font.Font(None, 30)
         width = (WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2)) - MATRIS_OFFSET*2
@@ -454,9 +450,10 @@ class Game(object):
         area.blit(linessurf, (0, levelsurf.get_rect().height + scoresurf.get_rect().height))
         area.blit(combosurf, (0, levelsurf.get_rect().height + scoresurf.get_rect().height + linessurf.get_rect().height))
 
-        return area
+        screen.blit(area, area.get_rect(bottom=HEIGHT-MATRIS_OFFSET, centerx=TRICKY_CENTERX))
 
-    def next_tetromino_surf(self, tetromino_surf):
+
+    def blit_next_tetromino(self, tetromino_surf):
         area = Surface((BLOCKSIZE*5, BLOCKSIZE*5))
         area.fill(BORDERCOLOR)
         area.fill(BGCOLOR, Rect(BORDERWIDTH, BORDERWIDTH, BLOCKSIZE*5-BORDERWIDTH*2, BLOCKSIZE*5-BORDERWIDTH*2))
@@ -468,7 +465,7 @@ class Game(object):
         center = areasize/2 - tetromino_surf_size/2
         area.blit(tetromino_surf, (center, center))
 
-        return area
+        screen.blit(area, area.get_rect(top=MATRIS_OFFSET, centerx=TRICKY_CENTERX))
 
 class Menu(object):
     running = True
