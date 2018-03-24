@@ -233,22 +233,24 @@ class Matris(object):
             return False
             
     def request_movement(self, direction):
-        self.needs_redraw = True
         posY, posX = self.tetromino_position
         if direction == 'left' and self.blend(position=(posY, posX-1)):
             self.tetromino_position = (posY, posX-1)
+            self.needs_redraw = True
             return self.tetromino_position
         elif direction == 'right' and self.blend(position=(posY, posX+1)):
             self.tetromino_position = (posY, posX+1)
+            self.needs_redraw = True
             return self.tetromino_position
         elif direction == 'up' and self.blend(position=(posY-1, posX)):
+            self.needs_redraw = True
             self.tetromino_position = (posY-1, posX)
             return self.tetromino_position
         elif direction == 'down' and self.blend(position=(posY+1, posX)):
+            self.needs_redraw = True
             self.tetromino_position = (posY+1, posX)
             return self.tetromino_position
         else:
-            self.needs_redraw = False
             return False
 
     def rotated(self, rotation=None):
