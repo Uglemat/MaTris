@@ -261,7 +261,7 @@ class Matris(object):
         return rotate(self.current_tetromino.shape, rotation)
 
     def block(self, color, shadow=False):
-        colors = {'blue':   (47, 64, 224),
+        colors = {'blue':   (105, 105, 255),
                   'yellow': (225, 242, 41),
                   'pink':   (242, 41, 195),
                   'green':  (22, 181, 64),
