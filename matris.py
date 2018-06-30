@@ -271,7 +271,7 @@ class Matris(object):
 
 
         if shadow:
-            end = [40] # end is the alpha value
+            end = [90] # end is the alpha value
         else:
             end = [] # Adding this to the end will not change the array, thus no alpha value
 
