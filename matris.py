@@ -81,6 +81,9 @@ class Matris(object):
 
 
     def set_tetrominoes(self):
+        """
+        Sets information for the current and next tetrominos
+        """
         self.current_tetromino = self.next_tetromino
         self.next_tetromino = random.choice(list_of_tetrominoes)
         self.surface_of_next_tetromino = self.construct_surface_of_next_tetromino()
@@ -91,6 +94,9 @@ class Matris(object):
 
     
     def hard_drop(self):
+        """
+        Instantly places tetrominos in the cells below
+        """
         amount = 0
         while self.request_movement('down'):
             amount += 1
@@ -109,12 +115,15 @@ class Matris(object):
         
         for event in events:
             if pressed(pygame.K_p):
+                #Pauses game if p is pressed.
                 self.surface.fill((0,0,0))
                 self.needs_redraw = True
                 self.paused = not self.paused
             elif event.type == pygame.QUIT:
+                #Quits the game
                 self.gameover(full_exit=True)
             elif pressed(pygame.K_ESCAPE):
+                #Stops the current game if esc is pressed.
                 self.gameover()
 
         if self.paused:
@@ -122,21 +131,27 @@ class Matris(object):
 
         for event in events:
             if pressed(pygame.K_SPACE):
+                #Places tetromino in the cells below if space is pressed.
                 self.hard_drop()
             elif pressed(pygame.K_UP) or pressed(pygame.K_w):
+                #Rotates tetromino if up or w is pressed.
                 self.request_rotation()
 
             elif pressed(pygame.K_LEFT) or pressed(pygame.K_a):
+                #Moves tetromino left is left or a is pressed
                 self.request_movement('left')
                 self.movement_keys['left'] = 1
             elif pressed(pygame.K_RIGHT) or pressed(pygame.K_d):
+                #Moves tetromino right if right or d is pressed
                 self.request_movement('right')
                 self.movement_keys['right'] = 1
 
             elif unpressed(pygame.K_LEFT) or unpressed(pygame.K_a):
+                #Stops the tetromino moving left once key is pressed.
                 self.movement_keys['left'] = 0
                 self.movement_keys_timer = (-self.movement_keys_speed)*2
             elif unpressed(pygame.K_RIGHT) or unpressed(pygame.K_d):
+                #Stops the tetromino moving right once the key is pressed
                 self.movement_keys['right'] = 0
                 self.movement_keys_timer = (-self.movement_keys_speed)*2
 
@@ -511,6 +526,9 @@ class Menu(object):
         return font.render(text, True, (255,255,255))
 
 def construct_nightmare(size):
+    """
+    Constructs background image
+    """
     surf = Surface(size)
 
     boxsize = 8
