@@ -5,6 +5,15 @@ A clone of Tetris made using Pygame. Licensed under the GNU GPLv3. Works with bo
 
 Run `python matris.py` to start the game.
 
+Requires
+========
+Requires python 3
+
+
+Requires pip: `sudo apt install python3-pip` or `sudo apt install python3-pip`
+
+Requires pygame: `sudo pip install pygame` or `sudo pip install pygame`
+
 Demo
 ====
 ![Demo](demo.png)
