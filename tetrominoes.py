@@ -4,6 +4,7 @@ from collections import namedtuple
 X, O = 'X', None
 Tetromino = namedtuple("Tetrimino", "name color shape")
 
+#Creates the list of tetrominos for use in the game
 list_of_tetrominoes = [
     Tetromino(name="long",
               color="blue",
@@ -65,20 +66,23 @@ def test():
     map(rotate,    tetromino_shapes)
     map(shape,     tetromino_shapes)
     map(shape_str, tetromino_shapes)
-
+    
+    #Tests for tetromino shapes
     assert shape_str(tetromino_shapes[4]) == "XXO\nOXX\nOOO"
     
     assert shape_str(tetromino_shapes[1]) == "XX\nXX"
+    
+    assert shape_str(tetromino_shapes[2]) == "OXO\nXXX\nOOO"
     
     assert shape_str(tetromino_shapes[3]) ==  "OXX\nXXO\nOOO" 
     
     assert rotate(tetromino_shapes[1],4) == ((X,X),(X,X))
 
+    # Rotation Tests
     assert rotate(tetromino_shapes[3], 4) == ((O,X,X),
                                               (X,X,O),
                                               (O,O,O))
     
-    assert shape_str(tetromino_shapes[2]) == "OXO\nXXX\nOOO"
     
     assert rotate(tetromino_shapes[2], 4) == ((O,X,O),
                                               (X,X,X),
