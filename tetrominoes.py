@@ -66,19 +66,28 @@ def test():
     map(shape,     tetromino_shapes)
     map(shape_str, tetromino_shapes)
 
-    assert shape_str(T_left_snake.shape) == "XXO\nOXX\nOOO"
+    assert shape_str(tetromino_shapes[4]) == "XXO\nOXX\nOOO"
+    
+    assert shape_str(tetromino_shapes[1]) == "XX\nXX"
+    
+    assert shape_str(tetromino_shapes[3]) ==  "OXX\nXXO\nOOO" 
+    
+    assert rotate(tetromino_shapes[1],4) == ((X,X),(X,X))
 
-    assert rotate(T_square.shape) == T_square.shape
+    assert rotate(tetromino_shapes[3], 4) == ((O,X,X),
+                                              (X,X,O),
+                                              (O,O,O))
+    
+    assert shape_str(tetromino_shapes[2]) == "OXO\nXXX\nOOO"
+    
+    assert rotate(tetromino_shapes[2], 4) == ((O,X,O),
+                                              (X,X,X),
+                                              (O,O,O))
 
-    assert rotate(T_right_snake.shape, 4) == T_right_snake.shape
-
-    assert rotate(T_hat.shape)    == ((O,X,O),
-                                      (O,X,X),
-                                      (O,X,O))
-
-    assert rotate(T_hat.shape, 2) == ((O,O,O),
+    assert rotate(tetromino_shapes[2], 2) == ((O,O,O),
                                       (X,X,X),
                                       (O,X,O))
+
     print("All tests passed in {}, things seems to be working alright".format(__file__))
 
 if __name__ == '__main__':
