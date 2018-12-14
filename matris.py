@@ -432,6 +432,10 @@ class Matris(object):
 
 class Game(object):
     def main(self, screen):
+        """
+        Main loop for game
+        Redraws scores and next tetromino each time the loop is passed through
+        """
         clock = pygame.time.Clock()
 
         self.matris = Matris()
@@ -454,6 +458,9 @@ class Game(object):
       
 
     def redraw(self):
+        """
+        Redraws the information panel and next termoino panel
+        """
         if not self.matris.paused:
             self.blit_next_tetromino(self.matris.surface_of_next_tetromino)
             self.blit_info()
@@ -464,6 +471,9 @@ class Game(object):
 
 
     def blit_info(self):
+        """
+        Draws information panel
+        """
         textcolor = (255, 255, 255)
         font = pygame.font.Font(None, 30)
         width = (WIDTH-(MATRIS_OFFSET+BLOCKSIZE*MATRIX_WIDTH+BORDERWIDTH*2)) - MATRIS_OFFSET*2
@@ -477,7 +487,8 @@ class Game(object):
             surf.blit(text, text.get_rect(top=BORDERWIDTH+10, left=BORDERWIDTH+10))
             surf.blit(val, val.get_rect(top=BORDERWIDTH+10, right=width-(BORDERWIDTH+10)))
             return surf
-
+        
+        #Resizes side panel to allow for all information to be display there.
         scoresurf = renderpair("Score", self.matris.score)
         levelsurf = renderpair("Level", self.matris.level)
         linessurf = renderpair("Lines", self.matris.lines)
@@ -487,11 +498,13 @@ class Game(object):
                        scoresurf.get_rect().height +
                        linessurf.get_rect().height + 
                        combosurf.get_rect().height )
-
+        
+        #Colours side panel
         area = Surface((width, height))
         area.fill(BORDERCOLOR)
         area.fill(BGCOLOR, Rect(BORDERWIDTH, BORDERWIDTH, width-BORDERWIDTH*2, height-BORDERWIDTH*2))
-
+        
+        #Draws side panel
         area.blit(levelsurf, (0,0))
         area.blit(scoresurf, (0, levelsurf.get_rect().height))
         area.blit(linessurf, (0, levelsurf.get_rect().height + scoresurf.get_rect().height))
@@ -501,6 +514,9 @@ class Game(object):
 
 
     def blit_next_tetromino(self, tetromino_surf):
+        """
+        Draws the next tetromino in a box to the side of the board
+        """
         area = Surface((BLOCKSIZE*5, BLOCKSIZE*5))
         area.fill(BORDERCOLOR)
         area.fill(BGCOLOR, Rect(BORDERWIDTH, BORDERWIDTH, BLOCKSIZE*5-BORDERWIDTH*2, BLOCKSIZE*5-BORDERWIDTH*2))
@@ -532,7 +548,7 @@ class Menu(object):
         menu.focus_color = (40, 200, 40)
         
         nightmare = construct_nightmare(screen.get_size()) #Constructs background image
-        highscoresurf = self.construct_highscoresurf()
+        highscoresurf = self.construct_highscoresurf() #Loads highscore onto menu
 
         timepassed = clock.tick(30) / 1000.
 
