@@ -7,12 +7,12 @@ Run `python matris.py` to start the game.
 
 Requires
 ========
-Requires python 3
+Requires python 2.x or python 3.x
 
 
-Requires pip: `sudo apt install python3-pip` or `sudo apt install python3-pip`
+Requires pip: `sudo apt install python-pip` or `sudo apt install python3-pip`
 
-Requires pygame: `sudo pip install pygame` or `sudo pip install pygame`
+Requires pygame: `sudo pip install pygame` or `sudo pip3 install pygame`
 
 Demo
 ====
