@@ -115,45 +115,37 @@ class Matris(object):
         unpressed = lambda key: event.type == pygame.KEYUP and event.key == key
 
         events = pygame.event.get()
+        #Controls pausing and quitting the game.
         for event in events:
             if pressed(pygame.K_p):
-                #Pauses game if p is pressed.
                 self.surface.fill((0,0,0))
                 self.needs_redraw = True
                 self.paused = not self.paused
             elif event.type == pygame.QUIT:
-                #Quits the game
                 self.gameover(full_exit=True)
             elif pressed(pygame.K_ESCAPE):
-                #Stops the current game if esc is pressed.
                 self.gameover()
 
         if self.paused:
             return self.needs_redraw
 
         for event in events:
+            #Controls movement of the tetromino
             if pressed(pygame.K_SPACE):
-                #Places tetromino in the cells below if space is pressed.
                 self.hard_drop()
             elif pressed(pygame.K_UP) or pressed(pygame.K_w):
-                #Rotates tetromino if up or w is pressed.
                 self.request_rotation()
-
             elif pressed(pygame.K_LEFT) or pressed(pygame.K_a):
-                #Moves tetromino left is left or a is pressed
                 self.request_movement('left')
                 self.movement_keys['left'] = 1
             elif pressed(pygame.K_RIGHT) or pressed(pygame.K_d):
-                #Moves tetromino right if right or d is pressed
                 self.request_movement('right')
                 self.movement_keys['right'] = 1
 
             elif unpressed(pygame.K_LEFT) or unpressed(pygame.K_a):
-                #Stops the tetromino moving left once key is pressed.
                 self.movement_keys['left'] = 0
                 self.movement_keys_timer = (-self.movement_keys_speed)*2
             elif unpressed(pygame.K_RIGHT) or unpressed(pygame.K_d):
-                #Stops the tetromino moving right once the key is pressed
                 self.movement_keys['right'] = 0
                 self.movement_keys_timer = (-self.movement_keys_speed)*2
 
@@ -537,7 +529,6 @@ class Menu(object):
     running = True
     def main(self, screen):
         clock = pygame.time.Clock()
-        #Loads menu
         menu = kezmenu.KezMenu(
             ['Play!', lambda: Game().main(screen)],
             ['Quit', lambda: setattr(self, 'running', False)],
@@ -547,7 +538,7 @@ class Menu(object):
         menu.color = (255,255,255)
         menu.focus_color = (40, 200, 40)
         
-        nightmare = construct_nightmare(screen.get_size()) #Constructs background image
+        nightmare = construct_nightmare(screen.get_size())
         highscoresurf = self.construct_highscoresurf() #Loads highscore onto menu
 
         timepassed = clock.tick(30) / 1000.
