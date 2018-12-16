@@ -10,15 +10,6 @@ Requirements
 
 The game requires [pygame](https://www.pygame.org). On Ubuntu it can be installed with these commands: `sudo apt install python-pip && sudo pip install pygame` (for Python 2) `sudo apt install python3-pip && sudo pip3 install pygame` (for Python 3).
 
-Requires
-========
-Requires python 2.x or python 3.x
-
-
-Requires pip: `sudo apt install python-pip` or `sudo apt install python3-pip`
-
-Requires pygame: `sudo pip install pygame` or `sudo pip3 install pygame`
-
 Demo
 ====
 ![Demo](demo.png)
