@@ -49,11 +49,6 @@ def shape_str(shape):
 def shape(shape):
     """ Print a shape in human readable form """
     print(shape_str(shape))
-
-
-
-
-
 def test():
     tetromino_shapes = [t.shape for t in list_of_tetrominoes]
     map(rotate,    tetromino_shapes)

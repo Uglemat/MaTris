@@ -15,6 +15,9 @@ def load_score():
     return scores[0] if scores else 0
 
 def write_score(score):
+    """
+    Writes score to file.
+    """
     assert str(score).isdigit()
     with open(scorefile, 'a') as file:
         file.write("{}\n".format(score))
